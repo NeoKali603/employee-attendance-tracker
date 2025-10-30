@@ -2,95 +2,46 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const attendanceRoutes = require('./routes/attendance');
-const DatabaseConfig = require('./config/database-config');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Initialize database
-const db = DatabaseConfig.getDatabase();
-
-// Enable CORS for all routes
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const PORT = process.env.PORT || 5000; // Use Railway's PORT or default to 5000
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.RAILWAY_STATIC_URL, 'https://your-app-name.railway.app'] 
+    : ['http://localhost:3000', 'http://localhost:5000'],
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Something went wrong!',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
-// Simple health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', message: 'Service is running' });
-});
 
 // Routes
 app.use('/api/attendance', attendanceRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log('Database configuration:', {
-    host: process.env.MYSQL_HOST || 'nozomi.proxy.rlwy.net',
-    port: process.env.MYSQL_PORT || 46172,
-    database: process.env.MYSQL_DATABASE || 'railway',
-    user: process.env.MYSQL_USER || 'root'
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    port: PORT
   });
 });
 
-// Health check with DB status
-app.get('/health', async (req, res) => {
-  try {
-    const connection = await db.getConnection();
-    connection.release();
-    
-    res.status(200).json({ 
-      status: 'OK', 
-      message: 'Server is running',
-      database: 'Connected',
-      timestamp: new Date().toISOString(),
-      env: process.env.NODE_ENV,
-      railway: DatabaseConfig.isRailway() ? 'true' : 'false'
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      status: 'ERROR', 
-      message: 'Server is running but database connection failed',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Database connection error',
-      timestamp: new Date().toISOString()
-    });
-  }
+// API info endpoint
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Employee Attendance Tracker API',
+    version: '1.0.0',
+    environment: process.env.NODE_ENV,
+    port: PORT
+  });
 });
 
-// Start server
-const server = app.listen(PORT, '0.0.0.0', () => {
+// Start server - Listen on 0.0.0.0 for Railway
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
-  console.log(`📊 Database: ${DatabaseConfig.getDatabaseType()}`);
-});
-
-// Handle graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-    db.close().then(() => {
-      console.log('Database connections closed');
-      process.exit(0);
-    });
-  });
+  console.log(`📍 Host: 0.0.0.0`);
 });
