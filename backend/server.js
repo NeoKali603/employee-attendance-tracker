@@ -5,10 +5,17 @@ const attendanceRoutes = require('./routes/attendance');
 const DatabaseConfig = require('./config/database-config');
 
 const app = express();
-const PORT = process.env.PORT || process.env.RAILWAY_PORT || 5000;
+const PORT = process.env.PORT || 5000;
 
 // Initialize database
 const db = DatabaseConfig.getDatabase();
+
+// Enable CORS for all routes
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Middleware
 app.use(cors());
