@@ -11,13 +11,13 @@ class RailwayMySQLDatabase {
   }
 
   buildConfig() {
-    // Try using the MYSQL_URL first (Railway's preferred connection method)
-    const mysqlUrl = process.env.MYSQL_URL;
+    // Try using the public MYSQL_URL first
+    const mysqlUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
     
     if (mysqlUrl) {
       try {
         const parsed = new URL(mysqlUrl);
-        return {
+        const config = {
           host: parsed.hostname,
           user: parsed.username,
           password: parsed.password,
@@ -28,14 +28,19 @@ class RailwayMySQLDatabase {
           queueLimit: 0,
           ssl: {
             rejectUnauthorized: false
-          }
+          },
+          connectTimeout: 30000, // 30 seconds
+          acquireTimeout: 30000 // 30 seconds
         };
+        console.log('Using MySQL URL configuration');
+        return config;
       } catch (err) {
         console.error('Failed to parse MYSQL_URL:', err.message);
       }
     }
 
     // Fallback to individual environment variables
+    console.log('Using individual environment variables for MySQL connection');
     const config = {
       host: process.env.MYSQLHOST || 'localhost',
       user: process.env.MYSQLUSER || 'root',
@@ -47,7 +52,9 @@ class RailwayMySQLDatabase {
       queueLimit: 0,
       ssl: {
         rejectUnauthorized: false
-      }
+      },
+      connectTimeout: 30000, // 30 seconds
+      acquireTimeout: 30000 // 30 seconds
     };
 
     // Log connection details (excluding password)
