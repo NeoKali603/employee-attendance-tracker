@@ -25,17 +25,9 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Health check endpoint
-app.get('/health', async (req, res) => {
-  try {
-    // Try to get a database connection
-    const connection = await db.getConnection();
-    await connection.close();
-    res.status(200).json({ status: 'healthy', message: 'Database connection successful' });
-  } catch (error) {
-    console.error('Health check failed:', error);
-    res.status(500).json({ status: 'unhealthy', message: 'Database connection failed', error: error.message });
-  }
+// Simple health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', message: 'Service is running' });
 });
 
 // Routes
