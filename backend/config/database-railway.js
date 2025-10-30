@@ -11,27 +11,22 @@ class RailwayMySQLDatabase {
   }
 
   buildConfig() {
-    // Try using the public MYSQL_URL first
-    const mysqlUrl = process.env.MYSQL_PUBLIC_URL || process.env.MYSQL_URL;
-    
-    if (mysqlUrl) {
-      try {
-        const parsed = new URL(mysqlUrl);
-        const config = {
-          host: parsed.hostname,
-          user: parsed.username,
-          password: parsed.password,
-          database: parsed.pathname.replace('/', ''),
-          port: parseInt(parsed.port || '3306'),
-          waitForConnections: true,
-          connectionLimit: 10,
-          queueLimit: 0,
-          ssl: {
-            rejectUnauthorized: false
-          },
-          connectTimeout: 30000, // 30 seconds
-          acquireTimeout: 30000 // 30 seconds
-        };
+    // Use the direct connection details
+    const config = {
+      host: 'nozomi.proxy.rlwy.net',
+      user: 'root',
+      password: process.env.MYSQL_ROOT_PASSWORD,
+      database: 'railway',
+      port: 46172,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectTimeout: 30000, // 30 seconds
+      acquireTimeout: 30000 // 30 seconds
+    };
         console.log('Using MySQL URL configuration');
         return config;
       } catch (err) {
