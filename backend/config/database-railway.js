@@ -11,7 +11,6 @@ class RailwayMySQLDatabase {
   }
 
   buildConfig() {
-    // Use the direct connection details
     const config = {
       host: 'nozomi.proxy.rlwy.net',
       user: 'root',
@@ -24,32 +23,8 @@ class RailwayMySQLDatabase {
       ssl: {
         rejectUnauthorized: false
       },
-      connectTimeout: 30000, // 30 seconds
-      acquireTimeout: 30000 // 30 seconds
-    };
-        console.log('Using MySQL URL configuration');
-        return config;
-      } catch (err) {
-        console.error('Failed to parse MYSQL_URL:', err.message);
-      }
-    }
-
-    // Fallback to individual environment variables
-    console.log('Using individual environment variables for MySQL connection');
-    const config = {
-      host: process.env.MYSQLHOST || 'localhost',
-      user: process.env.MYSQLUSER || 'root',
-      password: process.env.MYSQLPASSWORD,
-      database: process.env.MYSQLDATABASE || 'railway',
-      port: parseInt(process.env.MYSQLPORT || '3306'),
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      ssl: {
-        rejectUnauthorized: false
-      },
-      connectTimeout: 30000, // 30 seconds
-      acquireTimeout: 30000 // 30 seconds
+      connectTimeout: 30000,
+      acquireTimeout: 30000
     };
 
     // Log connection details (excluding password)
