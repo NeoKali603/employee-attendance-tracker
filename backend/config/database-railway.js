@@ -1,23 +1,65 @@
+// backend/config/database-railway.js
 const mysql = require('mysql2/promise');
 require('dotenv').config();
+const { URL } = require('url');
 
 class RailwayMySQLDatabase {
   constructor() {
-    // Railway provides MySQL connection URL or individual variables
-    this.config = {
-      host: process.env.MYSQLHOST || process.env.DB_HOST || 'mysql.railway.internal',
-      user: process.env.MYSQLUSER || process.env.DB_USER || 'root',
-      password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
-      database: process.env.MYSQLDATABASE || process.env.DB_NAME || 'railway',
-      port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+    this.config = this.buildConfig();
+    this.pool = null;
+    this.init();
+  }
+
+  buildConfig() {
+    // Try using the MYSQL_URL first (Railway's preferred connection method)
+    const mysqlUrl = process.env.MYSQL_URL;
+    
+    if (mysqlUrl) {
+      try {
+        const parsed = new URL(mysqlUrl);
+        return {
+          host: parsed.hostname,
+          user: parsed.username,
+          password: parsed.password,
+          database: parsed.pathname.replace('/', ''),
+          port: parseInt(parsed.port || '3306'),
+          waitForConnections: true,
+          connectionLimit: 10,
+          queueLimit: 0,
+          ssl: {
+            rejectUnauthorized: false
+          }
+        };
+      } catch (err) {
+        console.error('Failed to parse MYSQL_URL:', err.message);
+      }
+    }
+
+    // Fallback to individual environment variables
+    const config = {
+      host: process.env.MYSQLHOST || 'localhost',
+      user: process.env.MYSQLUSER || 'root',
+      password: process.env.MYSQLPASSWORD,
+      database: process.env.MYSQLDATABASE || 'railway',
+      port: parseInt(process.env.MYSQLPORT || '3306'),
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
-      // Railway specific SSL configuration
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: {
+        rejectUnauthorized: false
+      }
     };
-    this.pool = null;
-    this.init();
+
+    // Log connection details (excluding password)
+    console.log('MySQL Configuration:', {
+      host: config.host,
+      user: config.user,
+      database: config.database,
+      port: config.port,
+      ssl: config.ssl
+    });
+
+    return config;
   }
 
   async init() {
@@ -30,20 +72,17 @@ class RailwayMySQLDatabase {
         port: this.config.port
       });
 
-      // Create pool directly - Railway database is already created
       this.pool = mysql.createPool(this.config);
-      
-      // Test connection
-      const testConnection = await this.pool.getConnection();
+      const testConn = await this.pool.getConnection();
       console.log('✓ Successfully connected to Railway MySQL');
-      testConnection.release();
-      
+      testConn.release();
+
       await this.createTables();
       await this.insertSampleData();
-      
+
       console.log('✓ Railway MySQL database initialized successfully');
     } catch (error) {
-      console.error('✗ Error connecting to Railway MySQL database:', error.message);
+      console.error('✗ Error connecting to Railway MySQL:', error.message);
       console.error('Connection details:', {
         host: this.config.host,
         user: this.config.user,
@@ -56,7 +95,6 @@ class RailwayMySQLDatabase {
   async createTables() {
     try {
       const connection = await this.pool.getConnection();
-      
       const schema = `
         CREATE TABLE IF NOT EXISTS attendance (
           id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,18 +105,12 @@ class RailwayMySQLDatabase {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         );
-
-        CREATE INDEX IF NOT EXISTS idx_attendance_employee_id ON attendance(employeeID);
-        CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance(date);
-        CREATE INDEX IF NOT EXISTS idx_attendance_status ON attendance(status);
-        CREATE INDEX IF NOT EXISTS idx_attendance_employee_name ON attendance(employeeName);
       `;
-
-      await connection.execute(schema);
+      await connection.query(schema);
       connection.release();
-      console.log('✓ Railway MySQL tables created/verified');
+      console.log('✓ Attendance table verified/created');
     } catch (error) {
-      console.error('✗ Error creating Railway MySQL tables:', error.message);
+      console.error('✗ Error creating tables:', error.message);
       throw error;
     }
   }
@@ -86,10 +118,8 @@ class RailwayMySQLDatabase {
   async insertSampleData() {
     try {
       const connection = await this.pool.getConnection();
-      
-      // Check if data already exists
-      const [rows] = await connection.execute('SELECT COUNT(*) as count FROM attendance');
-      
+      const [rows] = await connection.query('SELECT COUNT(*) AS count FROM attendance');
+
       if (rows[0].count === 0) {
         const sampleData = `
           INSERT INTO attendance (employeeName, employeeID, date, status) VALUES
@@ -97,18 +127,17 @@ class RailwayMySQLDatabase {
           ('Sarah Johnson', 'EMP002', CURDATE(), 'Present'),
           ('Mike Wilson', 'EMP003', CURDATE(), 'Absent'),
           ('Lisa Brown', 'EMP004', CURDATE(), 'Present'),
-          ('David Lee', 'EMP005', CURDATE(), 'Present')
+          ('David Lee', 'EMP005', CURDATE(), 'Present');
         `;
-
-        await connection.execute(sampleData);
-        console.log('✓ Sample data inserted into Railway MySQL');
+        await connection.query(sampleData);
+        console.log('✓ Sample data inserted');
       } else {
-        console.log('✓ Sample data already exists in Railway MySQL');
+        console.log('✓ Sample data already exists');
       }
-      
+
       connection.release();
     } catch (error) {
-      console.error('✗ Error inserting sample data into Railway MySQL:', error.message);
+      console.error('✗ Error inserting sample data:', error.message);
       throw error;
     }
   }
@@ -120,7 +149,7 @@ class RailwayMySQLDatabase {
   async close() {
     if (this.pool) {
       await this.pool.end();
-      console.log('✓ Railway MySQL connection pool closed');
+      console.log('✓ MySQL pool closed');
     }
   }
 }
