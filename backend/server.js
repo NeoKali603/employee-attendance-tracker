@@ -5,7 +5,7 @@ const attendanceRoutes = require('./routes/attendance');
 const DatabaseConfig = require('./config/database-config');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Initialize database
 const db = DatabaseConfig.getDatabase();
