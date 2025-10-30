@@ -33,14 +33,16 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/attendance', attendanceRoutes);
 
-// Log startup information
-console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-console.log(`Server starting on port ${PORT}`);
-console.log('Database configuration:', {
-  host: process.env.MYSQL_HOST || 'nozomi.proxy.rlwy.net',
-  port: process.env.MYSQL_PORT || 46172,
-  database: process.env.MYSQL_DATABASE || 'railway',
-  user: process.env.MYSQL_USER || 'root'
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log('Database configuration:', {
+    host: process.env.MYSQL_HOST || 'nozomi.proxy.rlwy.net',
+    port: process.env.MYSQL_PORT || 46172,
+    database: process.env.MYSQL_DATABASE || 'railway',
+    user: process.env.MYSQL_USER || 'root'
+  });
 });
 
 // Health check with DB status
