@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Full-stack attendance tracker",
   "scripts": {
-    "start": "node backend/server.js",
+    "start": "cd backend && npm install && node server.js",
     "dev": "nodemon backend/server.js",
-    "build": "echo 'No build step required'",
+    "build": "cd backend && npm install",
     "install-backend": "cd backend && npm install",
     "install-frontend": "cd frontend && npm install",
     "install-all": "npm run install-backend && npm run install-frontend"
