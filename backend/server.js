@@ -25,8 +25,31 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Health check endpoint
+app.get('/health', async (req, res) => {
+  try {
+    // Try to get a database connection
+    const connection = await db.getConnection();
+    await connection.close();
+    res.status(200).json({ status: 'healthy', message: 'Database connection successful' });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ status: 'unhealthy', message: 'Database connection failed', error: error.message });
+  }
+});
+
 // Routes
 app.use('/api/attendance', attendanceRoutes);
+
+// Log startup information
+console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`Server starting on port ${PORT}`);
+console.log('Database configuration:', {
+  host: process.env.MYSQL_HOST || 'nozomi.proxy.rlwy.net',
+  port: process.env.MYSQL_PORT || 46172,
+  database: process.env.MYSQL_DATABASE || 'railway',
+  user: process.env.MYSQL_USER || 'root'
+});
 
 // Health check with DB status
 app.get('/health', async (req, res) => {
