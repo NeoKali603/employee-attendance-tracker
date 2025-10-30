@@ -3,9 +3,8 @@ import axios from 'axios';
 import AttendanceForm from './components/AttendanceForm';
 import AttendanceDashboard from './components/AttendanceDashboard';
 import Navigation from './components/Navigation';
+import { ENDPOINTS } from './config/api';
 import './App.css';
-
-const API_BASE_URL = 'http://localhost:5000/api';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('form');
@@ -18,7 +17,7 @@ function App() {
   const fetchAttendance = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/attendance`);
+      const response = await axios.get(ENDPOINTS.ATTENDANCE);
       setAttendanceRecords(response.data);
     } catch (error) {
       console.error('Error fetching attendance:', error);
