@@ -28,6 +28,8 @@ router.post('/', async (req, res) => {
   try {
     const { employeeId, employeeName, date, status, checkIn, checkOut, department } = req.body;
     
+    console.log('📨 Received attendance data:', req.body);
+    
     // Validation
     if (!employeeId || !employeeName || !date || !status) {
       return res.status(400).json({
@@ -47,6 +49,8 @@ router.post('/', async (req, res) => {
       department
     });
 
+    console.log('✅ Attendance record created:', result);
+    
     res.status(201).json({
       success: true,
       message: 'Attendance record created successfully',
