@@ -12,22 +12,24 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configure CORS
+// Configure CORS - Allow all origins temporarily for debugging
 app.use(cors({
-  origin: true, // This allows all origins
-  credentials: true,
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true
 }));
 
 // Handle preflight requests
 app.options('*', cors());
 
-// Add CORS headers to all responses
+// Log all requests and responses for debugging
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  const oldJson = res.json;
+  res.json = function(body) {
+    console.log('Response Body:', body);
+    return oldJson.call(this, body);
+  };
   next();
 });
 
@@ -39,7 +41,12 @@ let attendanceRecords = [];
 let nextId = 1;
 
 // Test endpoint for CORS
-app.get('/test', (req, res) => {
+app.get('/api/test-cors', (req, res) => {
+  console.log('CORS Test Request:', {
+    origin: req.headers.origin,
+    method: req.method,
+    headers: req.headers
+  });
   res.json({
     message: 'Test endpoint working',
     headers: req.headers,
