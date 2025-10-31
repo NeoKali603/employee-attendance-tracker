@@ -33,10 +33,15 @@ const AttendanceDashboard = ({
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  console.log('📊 Dashboard records:', attendanceRecords); // Debug log
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h2>Attendance Records</h2>
+        <div className="stats">
+          <span>Total Records: {attendanceRecords?.length || 0}</span>
+        </div>
         <button onClick={onRefresh} className="refresh-btn">
           Refresh
         </button>
@@ -74,8 +79,11 @@ const AttendanceDashboard = ({
       <div className="records-container">
         {loading ? (
           <div className="loading">Loading attendance records...</div>
-        ) : attendanceRecords.length === 0 ? (
-          <div className="no-records">No attendance records found.</div>
+        ) : !attendanceRecords || attendanceRecords.length === 0 ? (
+          <div className="no-records">
+            <h3>No attendance records found</h3>
+            <p>Add some records using the "Mark Attendance" form</p>
+          </div>
         ) : (
           <table className="attendance-table">
             <thead>

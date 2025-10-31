@@ -29,9 +29,8 @@ const AttendanceForm = ({ onAttendanceAdded, apiBaseUrl }) => {
 
     setSubmitting(true);
     try {
-      console.log('🔄 Submitting attendance data...');
-      console.log('API URL:', `${apiBaseUrl}/api/attendance`);
-      console.log('Data to send:', formData);
+      console.log(' Submitting to:', `${apiBaseUrl}/api/attendance`);
+      console.log('Data:', formData);
 
       const response = await axios.post(`${apiBaseUrl}/api/attendance`, formData, {
         timeout: 10000,
@@ -40,9 +39,9 @@ const AttendanceForm = ({ onAttendanceAdded, apiBaseUrl }) => {
         }
       });
       
-      console.log('✅ Success Response:', response.data);
+      console.log(' Success Response:', response.data);
       
-      alert('Attendance recorded successfully!');
+      alert(' ' + response.data.message);
       setFormData({
         employeeName: '',
         employeeID: '',
@@ -51,60 +50,29 @@ const AttendanceForm = ({ onAttendanceAdded, apiBaseUrl }) => {
       });
       onAttendanceAdded(); // Refresh the dashboard
     } catch (error) {
-      console.error('❌ Full Error Object:', error);
-      console.error('❌ Error Message:', error.message);
-      console.error('❌ Error Code:', error.code);
-      console.error('❌ Error Response:', error.response);
-      console.error('❌ Error Request:', error.request);
-
+      console.error(' Full Error:', error);
+      
       if (error.response) {
         // Server responded with error status
-        const serverError = error.response.data;
-        console.error('❌ Server Error Details:', serverError);
-        alert(`Server Error (${error.response.status}): ${serverError.error || serverError.message || 'Unknown server error'}`);
+        console.error(' Server Response:', error.response.data);
+        alert(` Server Error: ${error.response.data.error || error.response.data.message}`);
       } else if (error.request) {
-        // Request was made but no response received
-        console.error('❌ Network Error - No response received');
-        alert('Network Error: Cannot connect to server. Please check:\n1. Backend is running\n2. Internet connection\n3. CORS configuration');
-      } else if (error.code === 'ECONNABORTED') {
-        // Request timeout
-        console.error('❌ Request Timeout');
-        alert('Request timeout: Server took too long to respond');
+        // No response received
+        console.error(' No Response:', error.request);
+        alert(' Network Error: Cannot connect to server');
       } else {
-        // Something else happened
-        console.error('❌ Unexpected Error:', error.message);
-        alert('Unexpected error: ' + error.message);
+        // Other error
+        console.error(' Other Error:', error.message);
+        alert(' Error: ' + error.message);
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Test backend connection
-  const testConnection = async () => {
-    try {
-      console.log('🔍 Testing backend connection...');
-      const response = await axios.get(`${apiBaseUrl}/health`);
-      console.log('✅ Backend connection successful:', response.data);
-      return true;
-    } catch (error) {
-      console.error('❌ Backend connection failed:', error.message);
-      return false;
-    }
-  };
-
   return (
     <div className="attendance-form-container">
       <h2>Mark Attendance</h2>
-      
-      <button 
-        type="button" 
-        onClick={testConnection}
-        style={{marginBottom: '20px', padding: '8px 16px', backgroundColor: '#17a2b8'}}
-      >
-        Test Backend Connection
-      </button>
-
       <form onSubmit={handleSubmit} className="attendance-form">
         <div className="form-group">
           <label htmlFor="employeeName">Employee Name *</label>

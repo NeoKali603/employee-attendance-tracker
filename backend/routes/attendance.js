@@ -7,7 +7,7 @@ let temporaryStorage = [];
 // POST - Add new attendance record (TEMPORARY FIX)
 router.post('/', async (req, res) => {
   try {
-    console.log('📥 Received POST request to /api/attendance');
+    console.log(' Received POST request to /api/attendance');
     console.log('Request body:', req.body);
     
     const { employeeName, employeeID, date, status } = req.body;
@@ -36,15 +36,15 @@ router.post('/', async (req, res) => {
     };
     
     temporaryStorage.push(newRecord);
-    console.log('✅ Record stored temporarily:', newRecord);
+    console.log(' Record stored:', newRecord);
     
     res.status(201).json({
-      message: 'Attendance recorded successfully (temporary storage)',
+      message: 'Attendance recorded successfully ',
       data: newRecord
     });
     
   } catch (error) {
-    console.error('❌ Error in POST /api/attendance:', error);
+    console.error(' Error in POST /api/attendance:', error);
     res.status(500).json({ 
       error: 'Failed to record attendance',
       details: error.message,
@@ -56,9 +56,9 @@ router.post('/', async (req, res) => {
 // GET - Retrieve all attendance records (TEMPORARY)
 router.get('/', async (req, res) => {
   try {
-    console.log('📥 Received GET request to /api/attendance');
+    console.log(' Received GET request to /api/attendance');
     res.json({
-      message: 'Attendance records retrieved successfully (temporary storage)',
+      message: 'Attendance records retrieved successfully',
       data: temporaryStorage,
       count: temporaryStorage.length
     });
