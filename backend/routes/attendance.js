@@ -1,153 +1,174 @@
 const express = require('express');
 const router = express.Router();
+const Database = require('../config/database');
 
-// Simple in-memory storage for testing (remove later)
-let temporaryStorage = [];
-
-// POST - Add new attendance record (TEMPORARY FIX)
-router.post('/', async (req, res) => {
-  try {
-    console.log(' Received POST request to /api/attendance');
-    console.log('Request body:', req.body);
-    
-    const { employeeName, employeeID, date, status } = req.body;
-
-    // Validation
-    if (!employeeName || !employeeID || !date || !status) {
-      return res.status(400).json({ 
-        error: 'All fields (employeeName, employeeID, date, status) are required' 
-      });
-    }
-
-    if (status !== 'Present' && status !== 'Absent') {
-      return res.status(400).json({ 
-        error: 'Status must be either "Present" or "Absent"' 
-      });
-    }
-
-    // TEMPORARY: Store in memory (bypass database)
-    const newRecord = {
-      id: Date.now(),
-      employeeName,
-      employeeID,
-      date,
-      status,
-      created_at: new Date().toISOString()
-    };
-    
-    temporaryStorage.push(newRecord);
-    console.log(' Record stored:', newRecord);
-    
-    res.status(201).json({
-      message: 'Attendance recorded successfully ',
-      data: newRecord
-    });
-    
-  } catch (error) {
-    console.error(' Error in POST /api/attendance:', error);
-    res.status(500).json({ 
-      error: 'Failed to record attendance',
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
-});
-
-// GET - Retrieve all attendance records (TEMPORARY)
+// GET all attendance records
 router.get('/', async (req, res) => {
   try {
-    console.log(' Received GET request to /api/attendance');
+    const db = Database.getConnection();
+    const records = await db.getAllAttendance();
+    
     res.json({
-      message: 'Attendance records retrieved successfully',
-      data: temporaryStorage,
-      count: temporaryStorage.length
+      success: true,
+      count: records.length,
+      data: records
     });
   } catch (error) {
-    console.error('Error fetching attendance:', error);
-    res.status(500).json({ 
+    console.error('Error fetching attendance records:', error);
+    res.status(500).json({
+      success: false,
       error: 'Failed to fetch attendance records',
-      details: error.message 
+      details: error.message
     });
   }
 });
 
-// DELETE - Remove an attendance record (TEMPORARY)
+// POST new attendance record
+router.post('/', async (req, res) => {
+  try {
+    const { employeeId, employeeName, date, status, checkIn, checkOut, department } = req.body;
+    
+    // Validation
+    if (!employeeId || !employeeName || !date || !status) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: employeeId, employeeName, date, status'
+      });
+    }
+
+    const db = Database.getConnection();
+    const result = await db.addAttendance({
+      employeeId,
+      employeeName,
+      date,
+      status,
+      checkIn,
+      checkOut,
+      department
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Attendance record created successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('Error creating attendance record:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create attendance record',
+      details: error.message
+    });
+  }
+});
+
+// DELETE attendance record
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const recordId = parseInt(id);
     
-    const initialLength = temporaryStorage.length;
-    temporaryStorage = temporaryStorage.filter(record => record.id !== recordId);
+    const db = Database.getConnection();
+    const result = await db.deleteAttendance(id);
     
-    if (temporaryStorage.length === initialLength) {
-      return res.status(404).json({ error: 'Record not found' });
+    if (result) {
+      res.json({
+        success: true,
+        message: 'Attendance record deleted successfully'
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: 'Record not found'
+      });
     }
-    
-    res.json({ 
-      message: 'Attendance record deleted successfully',
-      deletedId: id
-    });
   } catch (error) {
-    console.error('Error deleting attendance:', error);
-    res.status(500).json({ 
+    console.error('Error deleting attendance record:', error);
+    res.status(500).json({
+      success: false,
       error: 'Failed to delete attendance record',
-      details: error.message 
+      details: error.message
     });
   }
 });
 
-// GET - Search attendance (TEMPORARY)
+// SEARCH attendance records
 router.get('/search', async (req, res) => {
   try {
     const { q } = req.query;
     
     if (!q) {
-      return res.status(400).json({ error: 'Query parameter "q" is required' });
+      return res.status(400).json({
+        success: false,
+        error: 'Query parameter "q" is required'
+      });
     }
 
-    const filtered = temporaryStorage.filter(record => 
-      record.employeeName.toLowerCase().includes(q.toLowerCase()) ||
-      record.employeeID.toLowerCase().includes(q.toLowerCase())
-    );
+    const db = Database.getConnection();
+    const results = await db.searchAttendance(q);
     
     res.json({
-      message: 'Search completed successfully',
-      data: filtered,
-      count: filtered.length,
-      query: q
+      success: true,
+      query: q,
+      count: results.length,
+      data: results
     });
   } catch (error) {
-    console.error('Error searching attendance:', error);
-    res.status(500).json({ 
+    console.error('Error searching attendance records:', error);
+    res.status(500).json({
+      success: false,
       error: 'Failed to search attendance records',
-      details: error.message 
+      details: error.message
     });
   }
 });
 
-// GET - Filter by date (TEMPORARY)
+// FILTER attendance records by date
 router.get('/filter', async (req, res) => {
   try {
     const { date } = req.query;
     
     if (!date) {
-      return res.status(400).json({ error: 'Date parameter is required' });
+      return res.status(400).json({
+        success: false,
+        error: 'Query parameter "date" is required (YYYY-MM-DD)'
+      });
     }
 
-    const filtered = temporaryStorage.filter(record => record.date === date);
+    const db = Database.getConnection();
+    const results = await db.filterByDate(date);
     
     res.json({
-      message: 'Filter completed successfully',
-      data: filtered,
-      count: filtered.length,
-      date: date
+      success: true,
+      date: date,
+      count: results.length,
+      data: results
     });
   } catch (error) {
-    console.error('Error filtering attendance:', error);
-    res.status(500).json({ 
+    console.error('Error filtering attendance records:', error);
+    res.status(500).json({
+      success: false,
       error: 'Failed to filter attendance records',
-      details: error.message 
+      details: error.message
+    });
+  }
+});
+
+// GET attendance statistics
+router.get('/stats', async (req, res) => {
+  try {
+    const db = Database.getConnection();
+    const stats = await db.getAttendanceStats();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error fetching attendance stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch attendance statistics',
+      details: error.message
     });
   }
 });
