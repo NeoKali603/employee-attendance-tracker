@@ -121,3 +121,22 @@ process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down server gracefully...');
   process.exit(0);
 });
+// Database connection test endpoint
+app.get('/test-db', async (req, res) => {
+  try {
+    // Test if we can require the database module
+    const Database = require('./config/database');
+    const db = Database.getConnection();
+    
+    res.json({ 
+      status: 'Database module loaded successfully',
+      databaseType: Database.getDatabaseType()
+    });
+  } catch (error) {
+    console.error('Database test failed:', error);
+    res.status(500).json({ 
+      error: 'Database connection failed',
+      details: error.message 
+    });
+  }
+});

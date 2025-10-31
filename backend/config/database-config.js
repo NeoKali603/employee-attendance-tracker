@@ -1,31 +1,33 @@
-require('dotenv').config();
+const mysql = require('mysql2/promise');
 
-class DatabaseConfig {
-  static getDatabase() {
-    const dbType = process.env.DB_TYPE || 'sqlite';
-    
-    switch (dbType.toLowerCase()) {
-      case 'mysql':
-      case 'railway':
-        return require('./database-railway'); // Use Railway-specific MySQL
-      case 'postgresql':
-      case 'postgres':
-        return require('./database-postgresql');
-      case 'sqlite':
-      default:
-        return require('./database');
+class Database {
+  constructor() {
+    this.config = {
+      host: process.env.MYSQLHOST || 'localhost',
+      user: process.env.MYSQLUSER || 'root',
+      password: process.env.MYSQLPASSWORD || '',
+      database: process.env.MYSQLDATABASE || 'railway',
+      port: process.env.MYSQLPORT || 3306,
+    };
+    this.pool = null;
+  }
+
+  async connect() {
+    try {
+      this.pool = mysql.createPool(this.config);
+      const connection = await this.pool.getConnection();
+      console.log('✅ Connected to MySQL database');
+      connection.release();
+      return true;
+    } catch (error) {
+      console.error('❌ Database connection failed:', error.message);
+      return false;
     }
   }
 
-  static getDatabaseType() {
-    return process.env.DB_TYPE || 'sqlite';
-  }
-
-  // Railway-specific method
-  static isRailway() {
-    return process.env.RAILWAY_ENVIRONMENT === 'true' || 
-           process.env.RAILWAY_STATIC_URL !== undefined;
+  getConnection() {
+    return this.pool;
   }
 }
 
-module.exports = DatabaseConfig;
+module.exports = new Database();
