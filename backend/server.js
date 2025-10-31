@@ -4,9 +4,9 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// SIMPLE CORS - This will definitely work
+// Configure CORS for our frontend
 app.use(cors({
-  origin: '*', // Allow ALL origins for now
+  origin: 'https://adventurous-enjoyment-production-d459.up.railway.app',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -43,6 +43,9 @@ app.get('/test-cors', (req, res) => {
 
 // GET all attendance records
 app.get('/api/attendance', (req, res) => {
+  console.log('GET /api/attendance - Origin:', req.headers.origin);
+  console.log('Records count:', attendanceRecords.length);
+  
   res.json({
     success: true,
     count: attendanceRecords.length,
