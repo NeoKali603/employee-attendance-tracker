@@ -1,8 +1,6 @@
 [build]
 builder = "nixpacks"
-
-[build.args]
-NODE_ENV = "production"
+buildCommand = "npm install --omit=dev"
 
 [deploy]
 startCommand = "npm start"
