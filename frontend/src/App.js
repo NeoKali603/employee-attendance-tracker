@@ -19,12 +19,12 @@ function App() {
   const fetchAttendance = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Fetching from:', `${API_BASE_URL}/api/attendance`);
+      console.log(' Fetching from:', `${API_BASE_URL}/api/attendance`);
       const response = await axios.get(`${API_BASE_URL}/api/attendance`);
-      console.log('✅ Fetch response:', response.data);
+      console.log(' Fetch response:', response.data);
       setAttendanceRecords(response.data.data || response.data);
     } catch (error) {
-      console.error('❌ Error fetching attendance:', error);
+      console.error(' Error fetching attendance:', error);
       console.error('Error details:', error.response?.data);
       alert('Error fetching attendance records: ' + (error.response?.data?.error || error.message));
     } finally {
@@ -93,10 +93,6 @@ function App() {
       <header className="app-header">
         <h1>Employee Attendance Tracker</h1>
         <p>HR Staff Portal</p>
-        <div className="connection-info">
-          <small>Backend: {API_BASE_URL}</small>
-          <small>Status: ✅ Connected</small>
-        </div>
       </header>
 
       <Navigation 
