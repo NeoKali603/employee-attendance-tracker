@@ -4,9 +4,17 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Configure CORS for our frontend
+// Log all incoming requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('Origin:', req.headers.origin);
+  console.log('Headers:', req.headers);
+  next();
+});
+
+// Configure CORS
 app.use(cors({
-  origin: 'https://adventurous-enjoyment-production-d459.up.railway.app',
+  origin: true, // This allows all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -15,12 +23,29 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
+// Add CORS headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  next();
+});
+
 // Body parser
 app.use(express.json());
 
 // SIMPLE in-memory storage (no database dependencies)
 let attendanceRecords = [];
 let nextId = 1;
+
+// Test endpoint for CORS
+app.get('/test', (req, res) => {
+  res.json({
+    message: 'Test endpoint working',
+    headers: req.headers,
+    origin: req.headers.origin
+  });
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -43,14 +68,22 @@ app.get('/test-cors', (req, res) => {
 
 // GET all attendance records
 app.get('/api/attendance', (req, res) => {
-  console.log('GET /api/attendance - Origin:', req.headers.origin);
-  console.log('Records count:', attendanceRecords.length);
-  
-  res.json({
-    success: true,
-    count: attendanceRecords.length,
-    data: attendanceRecords
-  });
+  try {
+    console.log('GET /api/attendance - Origin:', req.headers.origin);
+    console.log('Records count:', attendanceRecords.length);
+    
+    res.json({
+      success: true,
+      count: attendanceRecords.length,
+      data: attendanceRecords
+    });
+  } catch (error) {
+    console.error('Error in /api/attendance:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // POST new attendance record
@@ -136,6 +169,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`
 🚀 Server running on port ${PORT}
 ✅ CORS enabled for ALL origins
-🌐 URL: https://employee-attendance-tracker-production-5550.up.railway.app
+🌐 URL:https://adventurous-enjoyment-production-d459.up.railway.app
   `);
 });
