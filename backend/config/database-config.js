@@ -1,5 +1,6 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 class Database {
   constructor() {
@@ -9,17 +10,26 @@ class Database {
 
   init() {
     try {
-      const dbPath = path.join(__dirname, '..', 'data', 'attendance.db');
+      // Create data directory if it doesn't exist
+      const dataDir = path.join(__dirname, '..', 'data');
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+        console.log('📁 Created data directory:', dataDir);
+      }
+
+      const dbPath = path.join(dataDir, 'attendance.db');
+      console.log('📁 Database path:', dbPath);
+      
       this.db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
-          console.error('Error opening database:', err.message);
+          console.error('❌ Error opening database:', err.message);
         } else {
           console.log('✅ Connected to SQLite database');
           this.createTable();
         }
       });
     } catch (error) {
-      console.error('Database initialization error:', error);
+      console.error('❌ Database initialization error:', error);
     }
   }
 
@@ -40,7 +50,7 @@ class Database {
 
     this.db.run(sql, (err) => {
       if (err) {
-        console.error('Error creating table:', err.message);
+        console.error('❌ Error creating table:', err.message);
       } else {
         console.log('✅ Attendance table ready');
       }
@@ -164,6 +174,9 @@ class Database {
   }
 
   getConnection() {
+    if (!this.db) {
+      this.init();
+    }
     return this;
   }
 
@@ -172,4 +185,6 @@ class Database {
   }
 }
 
-module.exports = new Database();
+// Create and export instance
+const databaseInstance = new Database();
+module.exports = databaseInstance;
