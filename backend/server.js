@@ -4,15 +4,26 @@ const bodyParser = require('body-parser');
 const attendanceRoutes = require('./routes/attendance');
 
 const app = express();
-const PORT = process.env.PORT || 5000; // Use Railway's PORT or default to 5000
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware - Updated CORS for your specific backend
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [process.env.RAILWAY_STATIC_URL, 'https://your-app-name.railway.app'] 
-    : ['http://localhost:3000', 'http://localhost:5000'],
-  credentials: true
+  origin: [
+    'https://employee-attendance-tracker-production-5550.up.railway.app', // Your backend URL
+    'http://localhost:3000', // Local frontend development
+    'http://localhost:5000'  // Local backend development
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Alternative: Allow all origins during testing (uncomment if needed)
+// app.use(cors({
+//   origin: true, // Allow all origins
+//   credentials: true
+// }));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -23,9 +34,11 @@ app.use('/api/attendance', attendanceRoutes);
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'OK', 
-    message: 'Server is running',
+    message: 'Backend server is running',
     timestamp: new Date().toISOString(),
-    port: PORT
+    port: PORT,
+    environment: process.env.NODE_ENV,
+    backendUrl: 'https://employee-attendance-tracker-production-5550.up.railway.app'
   });
 });
 
@@ -35,13 +48,62 @@ app.get('/api', (req, res) => {
     message: 'Employee Attendance Tracker API',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
-    port: PORT
+    port: PORT,
+    endpoints: {
+      'GET /health': 'Health check',
+      'GET /api': 'API information',
+      'GET /api/attendance': 'Get all attendance records',
+      'POST /api/attendance': 'Create new attendance record',
+      'DELETE /api/attendance/:id': 'Delete attendance record',
+      'GET /api/attendance/search?q=query': 'Search records by name or ID',
+      'GET /api/attendance/filter?date=YYYY-MM-DD': 'Filter records by date',
+      'GET /api/attendance/stats': 'Get attendance statistics'
+    }
+  });
+});
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.redirect('/api');
+});
+
+// 404 handler for undefined routes
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Endpoint not found',
+    availableEndpoints: [
+      'GET /health',
+      'GET /api',
+      'GET /api/attendance',
+      'POST /api/attendance',
+      'DELETE /api/attendance/:id',
+      'GET /api/attendance/search',
+      'GET /api/attendance/filter'
+    ]
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err.stack);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    ...(process.env.NODE_ENV === 'development' && { details: err.message })
   });
 });
 
 // Start server - Listen on 0.0.0.0 for Railway
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📍 Host: 0.0.0.0`);
+  console.log(`🔗 Health check: http://0.0.0.0:${PORT}/health`);
+  console.log(`📚 API docs: http://0.0.0.0:${PORT}/api`);
+  console.log(`🌐 Public URL: https://employee-attendance-tracker-production-5550.up.railway.app`);
+});
+
+// Graceful shutdown
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down server gracefully...');
+  process.exit(0);
 });
