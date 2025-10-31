@@ -4,24 +4,39 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Log all incoming requests
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      'https://adventurous-enjoyment-production-d459.up.railway.app',
+      'http://localhost:3000'  // Allow local development
+    ];
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('Origin blocked:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
+// Log all requests for debugging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log('Origin:', req.headers.origin);
   console.log('Headers:', req.headers);
   next();
 });
-
-// Configure CORS - Allow all origins temporarily for debugging
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
-  credentials: true
-}));
-
-// Handle preflight requests
-app.options('*', cors());
 
 // Log all requests and responses for debugging
 app.use((req, res, next) => {
@@ -37,8 +52,19 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // SIMPLE in-memory storage (no database dependencies)
-let attendanceRecords = [];
-let nextId = 1;
+let attendanceRecords = [
+  {
+    id: 1,
+    employeeId: "EMP001",
+    employeeName: "Test User",
+    date: new Date().toISOString().split('T')[0],
+    status: "Present",
+    checkIn: "09:00",
+    checkOut: "17:00",
+    department: "IT"
+  }
+];
+let nextId = 2;
 
 // Test endpoint for CORS
 app.get('/api/test-cors', (req, res) => {
@@ -78,8 +104,9 @@ app.get('/api/attendance', (req, res) => {
   try {
     console.log('GET /api/attendance - Origin:', req.headers.origin);
     console.log('Records count:', attendanceRecords.length);
+    console.log('Full records:', JSON.stringify(attendanceRecords, null, 2));
     
-    res.json({
+    return res.status(200).json({
       success: true,
       count: attendanceRecords.length,
       data: attendanceRecords
